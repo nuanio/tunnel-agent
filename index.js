@@ -15,7 +15,6 @@ exports.httpsOverHttp = httpsOverHttp
 exports.httpOverHttps = httpOverHttps
 exports.httpsOverHttps = httpsOverHttps
 
-
 function httpOverHttp(options) {
   var agent = new TunnelingAgent(options)
   agent.request = http.request
@@ -44,6 +43,7 @@ function httpsOverHttps(options) {
   return agent
 }
 
+var FOO_HOST = undefined
 
 function TunnelingAgent(options) {
   var self = this
@@ -54,14 +54,16 @@ function TunnelingAgent(options) {
   self.sockets = []
 
   self.on('free', function onFree(socket, host, port) {
-    for (var i = 0, len = self.requests.length; i < len; ++i) {
-      var pending = self.requests[i]
-      if (pending.host === host && pending.port === port) {
-        // Detect the request to connect same origin server,
-        // reuse the connection.
-        self.requests.splice(i, 1)
-        pending.request.onSocket(socket)
-        return
+    if (host !== FOO_HOST) {
+      for (var i = 0, len = self.requests.length; i < len; ++i) {
+        var pending = self.requests[i]
+        if (pending.host === host && pending.port === port) {
+          // Detect the request to connect same origin server,
+          // reuse the connection.
+          self.requests.splice(i, 1)
+          pending.request.onSocket(socket)
+          return
+        }
       }
     }
     socket.destroy()
@@ -163,7 +165,7 @@ TunnelingAgent.prototype.createSocket = function createSocket(options, cb) {
       cb(socket)
     } else {
       debug('tunneling socket could not be established, statusCode=%d', res.statusCode)
-      self.emit('free', socket, options.host, options.port)
+      self.emit('free', socket, FOO_HOST)
       var error = new Error('tunneling socket could not be established, ' + 'statusCode=' + res.statusCode)
       error.code = 'ECONNRESET'
       options.request.emit('error', error)
