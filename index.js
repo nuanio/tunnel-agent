@@ -43,8 +43,6 @@ function httpsOverHttps(options) {
   return agent
 }
 
-var FOO_HOST = undefined
-
 function TunnelingAgent(options) {
   var self = this
   self.options = options || {}
@@ -54,7 +52,7 @@ function TunnelingAgent(options) {
   self.sockets = []
 
   self.on('free', function onFree(socket, host, port) {
-    if (host !== FOO_HOST) {
+    if (host) {
       for (var i = 0, len = self.requests.length; i < len; ++i) {
         var pending = self.requests[i]
         if (pending.host === host && pending.port === port) {
@@ -165,7 +163,7 @@ TunnelingAgent.prototype.createSocket = function createSocket(options, cb) {
       cb(socket)
     } else {
       debug('tunneling socket could not be established, statusCode=%d', res.statusCode)
-      self.emit('free', socket, FOO_HOST)
+      self.emit('free', socket)
       var error = new Error('tunneling socket could not be established, ' + 'statusCode=' + res.statusCode)
       error.code = 'ECONNRESET'
       options.request.emit('error', error)
